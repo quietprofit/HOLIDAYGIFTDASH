@@ -1,0 +1,276 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: Default-deny all paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Reusable Hardened Primitives ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function parentUserExists(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId));
+    }
+
+    function isValidMoney(val) {
+      return (val is int || val is float) && val >= 0 && val <= 1000000;
+    }
+
+    // --- Validation Blueprints ---
+    function isValidUserSettings(data, userId) {
+      return data.keys().hasAll(['ownerId', 'displayName', 'overallBudget', 'alertThresholdPct', 'notificationsEnabled', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'displayName', 'overallBudget', 'alertThresholdPct', 'notificationsEnabled', 'createdAt', 'updatedAt'])
+        && data.ownerId == userId
+        && isValidId(data.ownerId)
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && isValidMoney(data.overallBudget)
+        && (data.alertThresholdPct is int || data.alertThresholdPct is float) && data.alertThresholdPct >= 50 && data.alertThresholdPct <= 100
+        && data.notificationsEnabled is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidFamilyMember(data, userId) {
+      return data.keys().hasAll(['ownerId', 'name', 'relationship', 'ageGroup', 'listStatus', 'budgetAllocated', 'interests', 'niceDeeds', 'notes', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'name', 'relationship', 'ageGroup', 'listStatus', 'budgetAllocated', 'interests', 'niceDeeds', 'notes', 'createdAt', 'updatedAt'])
+        && data.ownerId == userId
+        && isValidId(data.ownerId)
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 80
+        && data.relationship is string && data.relationship.size() <= 60
+        && data.ageGroup is string && data.ageGroup.size() <= 40
+        && data.listStatus in ['nice', 'naughty', 'undecided']
+        && isValidMoney(data.budgetAllocated)
+        && data.interests is string && data.interests.size() <= 300
+        && data.niceDeeds is string && data.niceDeeds.size() <= 300
+        && data.notes is string && data.notes.size() <= 400
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidGiftItem(data, userId) {
+      return data.keys().hasAll(['ownerId', 'memberId', 'memberName', 'title', 'estimatedPrice', 'actualPrice', 'storeName', 'storeStopOrder', 'fulfillmentMode', 'purchaseUrl', 'availabilityStatus', 'priceAlertEnabled', 'status', 'notes', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'memberId', 'memberName', 'title', 'estimatedPrice', 'actualPrice', 'storeName', 'storeStopOrder', 'fulfillmentMode', 'purchaseUrl', 'availabilityStatus', 'priceAlertEnabled', 'status', 'notes', 'createdAt', 'updatedAt'])
+        && data.ownerId == userId
+        && isValidId(data.ownerId)
+        && isValidId(data.memberId)
+        && data.memberName is string && data.memberName.size() >= 1 && data.memberName.size() <= 80
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 140
+        && isValidMoney(data.estimatedPrice)
+        && isValidMoney(data.actualPrice)
+        && data.storeName is string && data.storeName.size() <= 80
+        && (data.storeStopOrder is int || data.storeStopOrder is float) && data.storeStopOrder >= 0 && data.storeStopOrder <= 100
+        && data.fulfillmentMode in ['in_store', 'online']
+        && data.purchaseUrl is string && data.purchaseUrl.size() <= 500
+        && data.availabilityStatus in ['in_stock', 'low_stock', 'online_only', 'unknown']
+        && data.priceAlertEnabled is bool
+        && data.status in ['planned', 'purchased', 'wrapped', 'delivered']
+        && data.notes is string && data.notes.size() <= 400
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAdventEvent(data, userId) {
+      return data.keys().hasAll(['ownerId', 'title', 'date', 'time', 'location', 'eventType', 'participantCount', 'budgetPerPerson', 'totalBudget', 'attendeesText', 'notes', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'title', 'date', 'time', 'location', 'eventType', 'participantCount', 'budgetPerPerson', 'totalBudget', 'attendeesText', 'notes', 'createdAt', 'updatedAt'])
+        && data.ownerId == userId
+        && isValidId(data.ownerId)
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 120
+        && data.date is string && data.date.size() == 10 && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && data.time is string && data.time.size() <= 20
+        && data.location is string && data.location.size() <= 120
+        && data.eventType in ['party', 'exchange', 'dinner', 'errand', 'other']
+        && (data.participantCount is int || data.participantCount is float) && data.participantCount >= 1 && data.participantCount <= 500
+        && isValidMoney(data.budgetPerPerson)
+        && isValidMoney(data.totalBudget)
+        && data.attendeesText is string && data.attendeesText.size() <= 300
+        && data.notes is string && data.notes.size() <= 400
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidWrappingSupply(data, userId) {
+      return data.keys().hasAll(['ownerId', 'name', 'category', 'quantityNote', 'stockStatus', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'name', 'category', 'quantityNote', 'stockStatus', 'createdAt', 'updatedAt'])
+        && data.ownerId == userId
+        && isValidId(data.ownerId)
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 100
+        && data.category is string && data.category.size() <= 50
+        && data.quantityNote is string && data.quantityNote.size() <= 80
+        && data.stockStatus in ['need_to_buy', 'low', 'stocked']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSecretSantaDraw(data, userId) {
+      return data.keys().hasAll(['ownerId', 'title', 'exchangeDate', 'budgetLimit', 'participants', 'assignments', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['ownerId', 'title', 'exchangeDate', 'budgetLimit', 'participants', 'assignments', 'createdAt', 'updatedAt'])
+        && data.ownerId == userId
+        && isValidId(data.ownerId)
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 120
+        && data.exchangeDate is string && data.exchangeDate.size() <= 10
+        && isValidMoney(data.budgetLimit)
+        && data.participants is list && data.participants.size() >= 2 && data.participants.size() <= 30
+        && data.participants[0] is string && data.participants[0].size() >= 1 && data.participants[0].size() <= 80
+        && data.assignments is list && data.assignments.size() >= 2 && data.assignments.size() <= 30
+        && data.assignments[0] is map && data.assignments[0].keys().hasAll(['giver', 'receiver']) && data.assignments[0].keys().hasOnly(['giver', 'receiver'])
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // --- Collection Rules ---
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+      allow create: if isOwner(userId)
+        && isValidId(userId)
+        && isValidUserSettings(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isOwner(userId)
+        && isValidId(userId)
+        && isValidUserSettings(incoming(), userId)
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['overallBudget', 'alertThresholdPct', 'notificationsEnabled', 'displayName', 'updatedAt'])
+        );
+      allow delete: if false;
+
+      match /members/{memberId} {
+        allow get: if isOwner(userId) && isValidId(memberId) && existing().ownerId == request.auth.uid;
+        allow list: if isOwner(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isOwner(userId)
+          && isValidId(memberId)
+          && isValidFamilyMember(incoming(), userId)
+          && parentUserExists(userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isOwner(userId)
+          && isValidId(memberId)
+          && isValidFamilyMember(incoming(), userId)
+          && parentUserExists(userId)
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly(['listStatus', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['name', 'relationship', 'ageGroup', 'listStatus', 'budgetAllocated', 'interests', 'niceDeeds', 'notes', 'updatedAt'])
+          );
+        allow delete: if isOwner(userId) && isValidId(memberId) && existing().ownerId == request.auth.uid;
+      }
+
+      match /gifts/{giftId} {
+        allow get: if isOwner(userId) && isValidId(giftId) && existing().ownerId == request.auth.uid;
+        allow list: if isOwner(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isOwner(userId)
+          && isValidId(giftId)
+          && isValidGiftItem(incoming(), userId)
+          && parentUserExists(userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isOwner(userId)
+          && isValidId(giftId)
+          && isValidGiftItem(incoming(), userId)
+          && parentUserExists(userId)
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly(['status', 'actualPrice', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['fulfillmentMode', 'storeStopOrder', 'availabilityStatus', 'priceAlertEnabled', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['memberId', 'memberName', 'title', 'estimatedPrice', 'actualPrice', 'storeName', 'storeStopOrder', 'fulfillmentMode', 'purchaseUrl', 'availabilityStatus', 'priceAlertEnabled', 'status', 'notes', 'updatedAt'])
+          );
+        allow delete: if isOwner(userId) && isValidId(giftId) && existing().ownerId == request.auth.uid;
+      }
+
+      match /events/{eventId} {
+        allow get: if isOwner(userId) && isValidId(eventId) && existing().ownerId == request.auth.uid;
+        allow list: if isOwner(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isOwner(userId)
+          && isValidId(eventId)
+          && isValidAdventEvent(incoming(), userId)
+          && parentUserExists(userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isOwner(userId)
+          && isValidId(eventId)
+          && isValidAdventEvent(incoming(), userId)
+          && parentUserExists(userId)
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly(['title', 'date', 'time', 'location', 'eventType', 'participantCount', 'budgetPerPerson', 'totalBudget', 'attendeesText', 'notes', 'updatedAt'])
+          );
+        allow delete: if isOwner(userId) && isValidId(eventId) && existing().ownerId == request.auth.uid;
+      }
+
+      match /supplies/{supplyId} {
+        allow get: if isOwner(userId) && isValidId(supplyId) && existing().ownerId == request.auth.uid;
+        allow list: if isOwner(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isOwner(userId)
+          && isValidId(supplyId)
+          && isValidWrappingSupply(incoming(), userId)
+          && parentUserExists(userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isOwner(userId)
+          && isValidId(supplyId)
+          && isValidWrappingSupply(incoming(), userId)
+          && parentUserExists(userId)
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly(['stockStatus', 'updatedAt']) ||
+            incoming().diff(existing()).affectedKeys().hasOnly(['name', 'category', 'quantityNote', 'stockStatus', 'updatedAt'])
+          );
+        allow delete: if isOwner(userId) && isValidId(supplyId) && existing().ownerId == request.auth.uid;
+      }
+
+      match /secretSantaDraws/{drawId} {
+        allow get: if isOwner(userId) && isValidId(drawId) && existing().ownerId == request.auth.uid;
+        allow list: if isOwner(userId) && existing().ownerId == request.auth.uid;
+        allow create: if isOwner(userId)
+          && isValidId(drawId)
+          && isValidSecretSantaDraw(incoming(), userId)
+          && parentUserExists(userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+        allow update: if isOwner(userId)
+          && isValidId(drawId)
+          && isValidSecretSantaDraw(incoming(), userId)
+          && parentUserExists(userId)
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && (
+            incoming().diff(existing()).affectedKeys().hasOnly(['title', 'exchangeDate', 'budgetLimit', 'participants', 'assignments', 'updatedAt'])
+          );
+        allow delete: if isOwner(userId) && isValidId(drawId) && existing().ownerId == request.auth.uid;
+      }
+    }
+  }
+}

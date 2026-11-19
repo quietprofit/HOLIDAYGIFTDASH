@@ -1,0 +1,343 @@
+{
+  "entities": {
+    "UserSettings": {
+      "title": "UserSettings",
+      "description": "Private holiday budget configuration and notification preferences for a user.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "UID of the user who owns this workspace."
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "description": "Display name shown in the user's holiday planner."
+        },
+        "overallBudget": {
+          "type": "number",
+          "description": "Total holiday gift and event budget in USD."
+        },
+        "alertThresholdPct": {
+          "type": "number",
+          "description": "Percentage threshold (50-100) for budget warning alerts."
+        },
+        "notificationsEnabled": {
+          "type": "boolean",
+          "description": "Whether browser deadline and budget alerts are enabled."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": ["ownerId", "displayName", "overallBudget", "alertThresholdPct", "notificationsEnabled", "createdAt", "updatedAt"]
+    },
+    "FamilyMember": {
+      "title": "FamilyMember",
+      "description": "A family member or gift recipient on the Naughty & Nice list.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "relationship": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "ageGroup": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "listStatus": {
+          "type": "string",
+          "enum": ["nice", "naughty", "undecided"]
+        },
+        "budgetAllocated": {
+          "type": "number"
+        },
+        "interests": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "niceDeeds": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 400
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["ownerId", "name", "relationship", "ageGroup", "listStatus", "budgetAllocated", "interests", "niceDeeds", "notes", "createdAt", "updatedAt"]
+    },
+    "GiftItem": {
+      "title": "GiftItem",
+      "description": "A planned, purchased, wrapped, or delivered holiday gift.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "memberId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "memberName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 140
+        },
+        "estimatedPrice": {
+          "type": "number"
+        },
+        "actualPrice": {
+          "type": "number"
+        },
+        "storeName": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "storeStopOrder": {
+          "type": "number"
+        },
+        "fulfillmentMode": {
+          "type": "string",
+          "enum": ["in_store", "online"]
+        },
+        "purchaseUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "availabilityStatus": {
+          "type": "string",
+          "enum": ["in_stock", "low_stock", "online_only", "unknown"]
+        },
+        "priceAlertEnabled": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["planned", "purchased", "wrapped", "delivered"]
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 400
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["ownerId", "memberId", "memberName", "title", "estimatedPrice", "actualPrice", "storeName", "storeStopOrder", "fulfillmentMode", "purchaseUrl", "availabilityStatus", "priceAlertEnabled", "status", "notes", "createdAt", "updatedAt"]
+    },
+    "AdventEvent": {
+      "title": "AdventEvent",
+      "description": "A holiday party, gift exchange, or seasonal deadline on the Advent Calendar.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "maxLength": 10
+        },
+        "time": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "location": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "eventType": {
+          "type": "string",
+          "enum": ["party", "exchange", "dinner", "errand", "other"]
+        },
+        "participantCount": {
+          "type": "number"
+        },
+        "budgetPerPerson": {
+          "type": "number"
+        },
+        "totalBudget": {
+          "type": "number"
+        },
+        "attendeesText": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 400
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["ownerId", "title", "date", "time", "location", "eventType", "participantCount", "budgetPerPerson", "totalBudget", "attendeesText", "notes", "createdAt", "updatedAt"]
+    },
+    "WrappingSupply": {
+      "title": "WrappingSupply",
+      "description": "A gift wrapping supply item in the holiday wrapping checklist.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "quantityNote": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "stockStatus": {
+          "type": "string",
+          "enum": ["need_to_buy", "low", "stocked"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["ownerId", "name", "category", "quantityNote", "stockStatus", "createdAt", "updatedAt"]
+    },
+    "SecretSantaDraw": {
+      "title": "SecretSantaDraw",
+      "description": "A Secret Santa gift exchange draw with participant list and pairings.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "exchangeDate": {
+          "type": "string",
+          "maxLength": 10
+        },
+        "budgetLimit": {
+          "type": "number"
+        },
+        "participants": {
+          "type": "array",
+          "description": "Bounded list of participant names (max 30)."
+        },
+        "assignments": {
+          "type": "array",
+          "description": "Bounded list of giver/receiver pairings (max 30)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["ownerId", "title", "exchangeDate", "budgetLimit", "participants", "assignments", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserSettings" },
+      "description": "Private user workspace settings and overall holiday budget."
+    },
+    "/users/{userId}/members/{memberId}": {
+      "schema": { "$ref": "#/entities/FamilyMember" },
+      "description": "Family members and recipients on the Naughty & Nice list."
+    },
+    "/users/{userId}/gifts/{giftId}": {
+      "schema": { "$ref": "#/entities/GiftItem" },
+      "description": "Gift items tracked across planning, purchasing, wrapping, and delivery."
+    },
+    "/users/{userId}/events/{eventId}": {
+      "schema": { "$ref": "#/entities/AdventEvent" },
+      "description": "Holiday parties, gift exchanges, and dates on the Advent Calendar."
+    },
+    "/users/{userId}/supplies/{supplyId}": {
+      "schema": { "$ref": "#/entities/WrappingSupply" },
+      "description": "Gift wrapping supplies checklist."
+    },
+    "/users/{userId}/secretSantaDraws/{drawId}": {
+      "schema": { "$ref": "#/entities/SecretSantaDraw" },
+      "description": "Saved Secret Santa name draws."
+    }
+  }
+}

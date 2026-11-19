@@ -1,0 +1,6 @@
+{
+  "name": "Holiday Gift Dashboard",
+  "description": "Enjoy Christmas. Not the January money stress. Organize holiday gift budgets, Shopping Mode checklists, Google Maps shopping routes, Naughty & Nice lists, and AI Gift Idea Generator plans in Holiday Gift Dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
